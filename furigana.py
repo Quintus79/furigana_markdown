@@ -4,6 +4,8 @@
 This extension provides two simple syntaxes to use furigana in a markdown
 document.
 
+This version is up to date with Python-Markdown 3.7
+
 ## Usage
 The following construct
 
@@ -34,39 +36,41 @@ like this
     図（と）書（しょ）館（かん）で本（ほん）を読（よ）みます。
 
 ## Installation
-Just copy the script into your python markdown extension directory, eg.
+1. Copy the script into your python markdown extension directory, eg.
 `/usr/lib/python3/dist-packages/markdown/extensions/`
+2. In `settings.py`, add `"MARKDOWN_EXTENSIONS": [ "markdown.extensions.furigana", ],` to the "default" dictionary 
+(and to the dictionaries for variants you use as well).
+3. In `settings.py`, add the following to the "WHITELIST_TAGS" list in the "default" dictionary (and any other 
+dictionaries you use): `"ruby", "rb", "rp", "rt"`.
 
 ## License
 furigana_markdown is licensed under the MIT license.
 """
 
-import markdown
-from markdown.inlinepatterns import Pattern
-from markdown.util import etree
+from markdown.extensions import Extension
+from markdown.inlinepatterns import Pattern, InlineProcessor
+import xml.etree.ElementTree as etree       # Necessary change
 
-RUBY1_RE = r'(\[)(.)\]\(\-(.+?)\)'
-RUBY2_RE = r'()([\u4e00-\u9faf])（([\u3040-\u3096]+?)）'
+class FuriganaExtension(Extension):
+    def extendMarkdown(self, md):           # the 'md_globals' variable is not passed anymore
+        RUBY1_PATTERN = r'(\[)(.)\]\(\-(.+?)\)'
+        md.inlinePatterns.register(RubyInlineProcessor(RUBY1_PATTERN, md), 'ruby1', 175)
 
-class FuriganaExtension(markdown.Extension):
-    def extendMarkdown(self, md, md_globals):
-        ruby1 = RubyPattern(RUBY1_RE)
-        md.inlinePatterns.add('ruby1', ruby1, '<link')
-        ruby2 = RubyPattern(RUBY2_RE)
-        md.inlinePatterns.add('ruby2', ruby2, '<link')
+        RUBY2_PATTERN = r'()([\u4e00-\u9faf])（([\u3040-\u3096]+?)）'
+        md.inlinePatterns.register(RubyInlineProcessor(RUBY2_PATTERN, md), 'ruby2', 175)
 
-class RubyPattern(Pattern):
-    def handleMatch(self, m):
+class RubyInlineProcessor(InlineProcessor):
+    def handleMatch(self, m, data):
         el = etree.Element('ruby')
         el1 = etree.SubElement(el, 'rb')
-        el1.text = m.group(3)
+        el1.text = m.group(2)
         el2 = etree.SubElement(el, 'rp')
         el2.text = '('
         el3 = etree.SubElement(el, 'rt')
-        el3.text = m.group(4)
+        el3.text = m.group(3)
         el4 = etree.SubElement(el, 'rp')
         el4.text = ')'
-        return el
+        return el, m.start(0), m.end(0)
 
-def makeExtension(configs=None):
-    return FuriganaExtension(configs=configs)
+def makeExtension(*args, **kwargs):             # This is unresolved issue #1 in djfun/furigana_markdown made by parryc on Jan 29, 2018
+    return FuriganaExtension(*args, **kwargs)   # Starting from here
