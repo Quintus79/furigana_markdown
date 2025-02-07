@@ -56,7 +56,7 @@ class FuriganaExtension(Extension):
         RUBY1_PATTERN = r'(\[)(.)\]\(\-(.+?)\)'
         md.inlinePatterns.register(RubyInlineProcessor(RUBY1_PATTERN, md), 'ruby1', 175)
 
-        RUBY2_PATTERN = r'()([\u4e00-\u9faf])（([\u3040-\u3096]+?)）'
+        RUBY2_PATTERN = r'()([\u3005\u4e00-\u9faf])（([\u3040-\u3096]+?)）'
         md.inlinePatterns.register(RubyInlineProcessor(RUBY2_PATTERN, md), 'ruby2', 175)
 
 class RubyInlineProcessor(InlineProcessor):
